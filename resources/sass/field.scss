@@ -23,26 +23,6 @@
     width: 100%;
     max-height: 360px !important;
 }
-
-#weiwait-modal {
-    width: 640px;
-    height: 420px;
-    background-color: #ffffff;
-    position: fixed;
-    top: 25%;
-    left: 38%;
-    box-shadow: 12px 12px 80px -12px;
-    .footer {
-        height: 60px;
-        line-height: 60px;
-        padding-left: .5rem;
-    }
-}
-
-.img-preview {
-    max-width: 270px;
-    cursor: pointer;
-}
 .weiwait-img {
     max-width: 270px;
     border: 1px solid #BACAD6;

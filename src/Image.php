@@ -33,18 +33,22 @@ class Image extends File
 
     protected function fillAttribute(NovaRequest $request, $requestAttribute, $model, $attribute)
     {
-        if ($request->exists($requestAttribute) && preg_match('/^(data:\s*image\/(\w+);base64,)/', $request[$requestAttribute], $res)) {
+        if ($request->exists($requestAttribute)) {
+            if (preg_match('/^(data:\s*image\/(\w+);base64,)/', $request[$requestAttribute], $res)) {
+                $filename = 'images/' . md5(Str::uuid()) . '.' . $res[2];
+                Storage::disk()->put($filename, base64_decode(str_replace($res[1], '', $request[$requestAttribute])));
+                $model->{$attribute} = $filename;
 
-            $filename = 'images/' . md5(Str::uuid()) . '.' . $res[2];
-            Storage::disk()->put($filename, base64_decode(str_replace($res[1], '', $request[$requestAttribute])));
-            $model->{$attribute} = $filename;
+                if ($this->sizeColumn) {
+                    $model[$this->sizeColumn] = Storage::disk()->size($filename);
+                }
 
-            if ($this->sizeColumn) {
-                $model[$this->sizeColumn] = Storage::disk()->size($filename);
-            }
-
-            if ($this->originalNameColumn && !empty($request['originalName'])) {
-                $model[$this->originalNameColumn] = $request['originalName'];
+                if ($this->originalNameColumn && !empty($request['originalName'])) {
+                    $model[$this->originalNameColumn] = $request['originalName'];
+                }
+            } elseif (isset($model->getOriginal()[$requestAttribute])) {
+                Storage::disk($this->getStorageDisk())->delete($model->getOriginal()[$requestAttribute]);
+                $model->{$attribute} = null;
             }
         }
     }

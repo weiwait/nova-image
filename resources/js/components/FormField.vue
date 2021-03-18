@@ -39,12 +39,30 @@
             </div>
         </div>
 
-        <div v-if="!preview" ref="dragRegion" v-bind:class="{'drag-enter': dragEnter}" id="drag-region">
+        <div v-if="!preview"
+             ref="dragRegion"
+             v-bind:class="{'drag-enter': dragEnter}"
+             id="drag-region"
+             @click.stop="dragRegionClick"
+             @dragleave.prevent="dragLeave"
+             @dragenter.prevent="dragEntering"
+             @dragover.prevent="dragOver"
+             @drop.prevent="drop($event)"
+        >
             点击或拖拽文件到此
         </div>
 
-        <div v-else class="img-preview" @click="switchCrop()">
+        <div v-else class="img-preview" @click="switchCrop()"
+             @mouseover="hover=true"
+             @mouseleave="hover=false"
+        >
             <img class="weiwait-img" :src="previewUrl" alt="">
+            <span
+                :class="['delete', {hover: hover}]"
+                @click.stop="deleteItem()"
+            >
+                移除
+            </span>
         </div>
 
     </template>
@@ -71,6 +89,7 @@ export default {
           showCropper: false,
           preview: false,
           previewUrl: '',
+          hover: false,
       }
     },
 
@@ -115,14 +134,7 @@ export default {
       uploadImg(e) {
           if (e.target.files.length !== 1) return;
 
-          this.originalName = e.target.files[0].name
-
-          let reader = new FileReader()
-          reader.readAsDataURL(e.target.files[0]);
-          reader.onload = e => {
-              this.cropper.img = e.target.result
-              this.showCropper = true
-          }
+          this.cropping(e.target.files[0])
       },
       closeCrop() {
         this.showCropper = false
@@ -131,45 +143,90 @@ export default {
       loopMultiple() {
         this.cropper.enlarge >= 3 ? this.cropper.enlarge = 1 : this.cropper.enlarge++
       },
-  },
-    mounted() {
-      this.cropper.img = this.previewUrl || ''
-
-      this.$refs.dragRegion.onclick = e => {
-          this.$refs.dragUploadImg.click()
-      }
-      this.$refs.dragRegion.ondragleave = (e) => {
+      dragEntering() {
+          this.dragEnter = true
+      },
+      dragLeave() {
           this.dragEnter = false
-          e.preventDefault()
-      }
-      this.$refs.dragRegion.ondragenter = (e) => {
-          this.dragEnter = true;
-          e.preventDefault()
-      }
-      this.$refs.dragRegion.ondragover = (e) => {
-          e.preventDefault()
-      }
-      this.$refs.dragRegion.ondrop = (e) => {
-          this.dragEnter = true;
+      },
+      dragOver() {
+          // this.dragEnter = false
+      },
+      dragRegionClick() {
+          this.$refs.dragUploadImg.click()
+      },
+      drop(e) {
           e.preventDefault()
           const files = e.dataTransfer.files
-          if (files.length !== 1 || 'image' !== files[0].type.substring(0, 5)) return;
+          this.dragEnter = false
+          if (files.length < 1) return;
 
-          this.originalName = files[0].name
+          this.cropping(files[0])
+
+          this.dragEnter = false
+      },
+      cropping(file) {
+          this.originalName = file.name
 
           let reader = new FileReader()
-          reader.readAsDataURL(files[0]);
+          reader.readAsDataURL(file);
           reader.onload = e => {
               this.cropper.img = e.target.result
               this.value = e.target.result
               this.previewUrl = e.target.result
               this.showCropper = true;
           }
-
-      }
+      },
+      deleteItem() {
+          this.previewUrl = ''
+          this.value = ''
+          this.preview = false
+      },
+  },
+    mounted() {
+      this.cropper.img = this.previewUrl || ''
     },
     components: {
         VueCropper,
     },
 }
 </script>
+
+<style lang="scss" scoped>
+#weiwait-modal {
+    width: 640px;
+    height: 420px;
+    background-color: #ffffff;
+    position: fixed;
+    top: 25%;
+    left: 38%;
+    z-index: 9;
+    box-shadow: 12px 12px 80px -12px;
+    .footer {
+        height: 60px;
+        line-height: 60px;
+        padding-left: .5rem;
+    }
+}
+.img-preview {
+    max-width: 270px;
+    cursor: pointer;
+    position: relative;
+}
+.delete {
+    width: 40px;
+    height: 40px;
+    opacity: 1;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    text-align: center;
+    line-height: 40px;
+    cursor: pointer;
+    display: none;
+}
+.hover {
+    display: block;
+    color: #d91414;
+}
+</style>
